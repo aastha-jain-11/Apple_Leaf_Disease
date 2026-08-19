@@ -1,0 +1,27 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Dataset
+dataset/
+
+# Generated outputs
+outputs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Python environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
