@@ -13,6 +13,9 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # installations
 pip install scikit-learn
 pip install numpy pandas pillow matplotlib tqdm openpyxl
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip install opencv-python scikit-image seaborn
+
 
 # run
 python src\preprocessing\analyze_dataset.py
