@@ -4,7 +4,6 @@
 # Python cache
 __pycache__/
 *.py[cod]
-*$py.class
 
 # Dataset
 dataset/
@@ -12,13 +11,18 @@ dataset/
 # Generated outputs
 outputs/
 
+# Trained models
+models/
+*.pth
+*.pt
+
 # Jupyter
 .ipynb_checkpoints/
 
 # VS Code
 .vscode/
 
-# Python environment files
+# Environment variables
 .env
 .env.*
 
