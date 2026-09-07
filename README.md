@@ -12,6 +12,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 # git clone
 git clone https://github.com/aastha-jain-11/Apple_Leaf_Disease.git apple_disease_project
+git restore --staged .
 
 # installations
 python.exe -m pip install --upgrade pip
