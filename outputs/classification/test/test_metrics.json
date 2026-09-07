@@ -1,0 +1,33 @@
+{
+    "experiment": "C_FULL",
+    "model": "ConvNeXt V2 Base",
+    "test_samples": 475,
+    "accuracy": 0.9957894736842106,
+    "macro_precision": 0.9948453608247423,
+    "macro_recall": 0.9979674796747967,
+    "macro_f1": 0.996375425170068,
+    "apple_scab": {
+        "precision": 0.979381443298969,
+        "recall": 1.0,
+        "f1": 0.9895833333333334,
+        "support": 95
+    },
+    "black_rot": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 93
+    },
+    "cedar_rust": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 41
+    },
+    "healthy": {
+        "precision": 1.0,
+        "recall": 0.991869918699187,
+        "f1": 0.9959183673469387,
+        "support": 246
+    }
+}

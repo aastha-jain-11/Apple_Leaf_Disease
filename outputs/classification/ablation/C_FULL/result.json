@@ -1,0 +1,20 @@
+{
+    "experiment": "C_FULL",
+    "best_epoch": 2,
+    "best_validation_macro_f1": 1.0,
+    "best_validation_accuracy": 1.0,
+    "configuration": {
+        "description": "Full proposed classification configuration",
+        "pretrained": true,
+        "augmentation": true,
+        "class_weights": true,
+        "scheduler": true
+    },
+    "hyperparameters": {
+        "batch_size": 32,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.0001,
+        "num_epochs": 15,
+        "random_seed": 42
+    }
+}

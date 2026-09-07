@@ -1,6 +1,8 @@
 from pathlib import Path
+import argparse
 import json
 import time
+import random
 
 import numpy as np
 import pandas as pd
@@ -8,6 +10,8 @@ import torch
 import torch.nn as nn
 
 from torch.utils.data import DataLoader
+from torchvision import transforms as tv_transforms
+
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support
@@ -20,19 +24,88 @@ from dataset import (
 
 from transforms import (
     train_transforms,
-    val_test_transforms
+    val_test_transforms,
+    IMAGE_SIZE
 )
 
 from model import create_model
 
 
 # ============================================================
-# CONFIGURATION
+# EXPERIMENT CONFIGURATIONS
 # ============================================================
 
-PROJECT_ROOT = Path(
-    __file__
-).resolve().parents[2]
+EXPERIMENTS = {
+
+    "C_FULL": {
+        "description": "Full proposed classification configuration",
+        "pretrained": True,
+        "augmentation": True,
+        "class_weights": True,
+        "scheduler": True
+    },
+
+    "C_NO_AUG": {
+        "description": "Ablation without data augmentation",
+        "pretrained": True,
+        "augmentation": False,
+        "class_weights": True,
+        "scheduler": True
+    },
+
+    "C_NO_WEIGHTS": {
+        "description": "Ablation without class weighting",
+        "pretrained": True,
+        "augmentation": True,
+        "class_weights": False,
+        "scheduler": True
+    },
+
+    "C_SCRATCH": {
+        "description": "Ablation using random initialization",
+        "pretrained": False,
+        "augmentation": True,
+        "class_weights": True,
+        "scheduler": True
+    },
+
+    "C_NO_SCHEDULER": {
+        "description": "Ablation without learning-rate scheduler",
+        "pretrained": True,
+        "augmentation": True,
+        "class_weights": True,
+        "scheduler": False
+    }
+}
+
+
+# ============================================================
+# COMMAND LINE ARGUMENTS
+# ============================================================
+
+parser = argparse.ArgumentParser(
+    description="ConvNeXt V2 classification experiment runner"
+)
+
+parser.add_argument(
+    "--experiment",
+    type=str,
+    required=True,
+    choices=list(EXPERIMENTS.keys()),
+    help="Experiment configuration to run"
+)
+
+args = parser.parse_args()
+
+EXPERIMENT_NAME = args.experiment
+EXPERIMENT_CONFIG = EXPERIMENTS[EXPERIMENT_NAME]
+
+
+# ============================================================
+# GENERAL CONFIGURATION
+# ============================================================
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 CSV_PATH = (
     PROJECT_ROOT
@@ -46,25 +119,27 @@ MODEL_DIR = (
     / "convnext"
 )
 
-OUTPUT_DIR = (
+OUTPUT_ROOT = (
     PROJECT_ROOT
     / "outputs"
     / "classification"
+    / "ablation"
 )
 
-MODEL_DIR.mkdir(
-    parents=True,
-    exist_ok=True
+EXPERIMENT_OUTPUT_DIR = (
+    OUTPUT_ROOT
+    / EXPERIMENT_NAME
 )
 
-OUTPUT_DIR.mkdir(
-    parents=True,
-    exist_ok=True
+EXPERIMENT_MODEL_DIR = (
+    MODEL_DIR
+    / "ablation"
+    / EXPERIMENT_NAME
 )
 
 
 # ============================================================
-# EXPERIMENT CONFIGURATION
+# HYPERPARAMETERS
 # ============================================================
 
 RANDOM_SEED = 42
@@ -79,20 +154,39 @@ LEARNING_RATE = 1e-4
 
 WEIGHT_DECAY = 1e-4
 
-NUM_EPOCHS = 2
+NUM_EPOCHS = 15
 
 USE_AMP = True
+
+EARLY_STOPPING_PATIENCE = 5
+
+
+# ============================================================
+# CREATE DIRECTORIES
+# ============================================================
+
+EXPERIMENT_OUTPUT_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+EXPERIMENT_MODEL_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 
 # ============================================================
 # REPRODUCIBILITY
 # ============================================================
 
-torch.manual_seed(
+random.seed(RANDOM_SEED)
+
+np.random.seed(
     RANDOM_SEED
 )
 
-np.random.seed(
+torch.manual_seed(
     RANDOM_SEED
 )
 
@@ -101,6 +195,8 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(
         RANDOM_SEED
     )
+
+    torch.backends.cudnn.benchmark = True
 
 
 # ============================================================
@@ -114,9 +210,33 @@ device = torch.device(
 )
 
 
+# ============================================================
+# PRINT EXPERIMENT INFORMATION
+# ============================================================
+
 print("=" * 70)
-print("CONVNEXT V2 TRAINING")
+print("CONVNEXT V2 CLASSIFICATION ABLATION")
 print("=" * 70)
+
+print()
+
+print("Experiment:")
+print(EXPERIMENT_NAME)
+
+print()
+
+print("Description:")
+print(EXPERIMENT_CONFIG["description"])
+
+print()
+
+print("Configuration:")
+print(
+    json.dumps(
+        EXPERIMENT_CONFIG,
+        indent=4
+    )
+)
 
 print()
 
@@ -154,17 +274,64 @@ print("=" * 70)
 print("LOADING DATASETS")
 print("=" * 70)
 
+# ------------------------------------------------------------
+# Training transforms
+# ------------------------------------------------------------
+
+if EXPERIMENT_CONFIG["augmentation"]:
+
+    selected_train_transforms = train_transforms
+
+else:
+
+    selected_train_transforms = tv_transforms.Compose([
+
+        tv_transforms.Resize(
+            (IMAGE_SIZE, IMAGE_SIZE)
+        ),
+
+        tv_transforms.ToTensor(),
+
+        tv_transforms.Normalize(
+            mean=[
+                0.485,
+                0.456,
+                0.406
+            ],
+            std=[
+                0.229,
+                0.224,
+                0.225
+            ]
+        )
+    ])
+
+
 train_dataset = AppleLeafDataset(
     csv_path=CSV_PATH,
     split="train",
-    transform=train_transforms
+    transform=selected_train_transforms
 )
+
 
 validation_dataset = AppleLeafDataset(
     csv_path=CSV_PATH,
     split="validation",
     transform=val_test_transforms
 )
+
+
+print()
+
+# print(
+#     f"Train dataset: "
+#     f"{len(train_dataset)} images"
+# )
+
+# print(
+#     f"Validation dataset: "
+#     f"{len(validation_dataset)} images"
+# )
 
 
 # ============================================================
@@ -189,17 +356,15 @@ validation_loader = DataLoader(
 
 
 # ============================================================
-# CALCULATE CLASS WEIGHTS
+# CLASS WEIGHTS
 # ============================================================
 
 print()
 print("=" * 70)
-print("CALCULATING CLASS WEIGHTS")
+print("CLASS WEIGHTS")
 print("=" * 70)
 
-train_labels = (
-    train_dataset.data["label"]
-)
+train_labels = train_dataset.data["label"]
 
 class_counts = (
     train_labels
@@ -210,49 +375,55 @@ class_counts = (
 print()
 
 print("Training class counts:")
-
 print(
     class_counts.to_string()
 )
 
 
-# ------------------------------------------------------------
-# Inverse-frequency weighting
-# ------------------------------------------------------------
+if EXPERIMENT_CONFIG["class_weights"]:
 
-total_samples = (
-    class_counts.sum()
-)
+    total_samples = class_counts.sum()
 
-class_weights = (
-    total_samples
-    /
-    (
-        NUM_CLASSES
-        * class_counts
-    )
-)
-
-print()
-
-print("Class weights:")
-
-for class_name, weight in zip(
-    CLASS_NAMES,
-    class_weights
-):
-
-    print(
-        f"{class_name:15s}: "
-        f"{weight:.4f}"
+    class_weights = (
+        total_samples
+        /
+        (
+            NUM_CLASSES
+            * class_counts
+        )
     )
 
+    print()
 
-class_weights_tensor = torch.tensor(
-    class_weights.values,
-    dtype=torch.float32,
-    device=device
-)
+    print("Class weighting: ENABLED")
+
+    print()
+
+    print("Class weights:")
+
+    for class_name, weight in zip(
+        CLASS_NAMES,
+        class_weights
+    ):
+
+        print(
+            f"{class_name:15s}: "
+            f"{weight:.4f}"
+        )
+
+    class_weights_tensor = torch.tensor(
+        class_weights.values,
+        dtype=torch.float32,
+        device=device
+    )
+
+else:
+
+    print()
+
+    print("Class weighting: DISABLED")
+
+    class_weights_tensor = None
 
 
 # ============================================================
@@ -266,7 +437,7 @@ print("=" * 70)
 
 model = create_model(
     num_classes=NUM_CLASSES,
-    pretrained=True
+    pretrained=EXPERIMENT_CONFIG["pretrained"]
 )
 
 model = model.to(device)
@@ -293,6 +464,28 @@ optimizer = torch.optim.AdamW(
 
 
 # ============================================================
+# LEARNING RATE SCHEDULER
+# ============================================================
+
+if EXPERIMENT_CONFIG["scheduler"]:
+
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=NUM_EPOCHS
+    )
+
+    print()
+    print("Scheduler: CosineAnnealingLR")
+
+else:
+
+    scheduler = None
+
+    print()
+    print("Scheduler: DISABLED")
+
+
+# ============================================================
 # MIXED PRECISION
 # ============================================================
 
@@ -308,7 +501,7 @@ else:
 
 
 # ============================================================
-# METRICS FUNCTION
+# METRICS
 # ============================================================
 
 def calculate_metrics(
@@ -374,7 +567,7 @@ def train_one_epoch():
         )
 
         # ----------------------------------------------------
-        # Forward pass
+        # Forward + backward
         # ----------------------------------------------------
 
         if scaler is not None:
@@ -392,10 +585,6 @@ def train_one_epoch():
                     outputs,
                     labels
                 )
-
-            # ------------------------------------------------
-            # Backward pass
-            # ------------------------------------------------
 
             scaler.scale(
                 loss
@@ -585,6 +774,87 @@ def validate():
 
 
 # ============================================================
+# SAVE EXPERIMENT CONFIGURATION
+# ============================================================
+
+full_config = {
+
+    "experiment": EXPERIMENT_NAME,
+
+    "experiment_description":
+        EXPERIMENT_CONFIG["description"],
+
+    "experiment_settings":
+        EXPERIMENT_CONFIG,
+
+    "hyperparameters": {
+
+        "random_seed":
+            RANDOM_SEED,
+
+        "batch_size":
+            BATCH_SIZE,
+
+        "num_workers":
+            NUM_WORKERS,
+
+        "num_classes":
+            NUM_CLASSES,
+
+        "image_size":
+            IMAGE_SIZE,
+
+        "learning_rate":
+            LEARNING_RATE,
+
+        "weight_decay":
+            WEIGHT_DECAY,
+
+        "num_epochs":
+            NUM_EPOCHS,
+
+        "use_amp":
+            USE_AMP,
+
+        "early_stopping_patience":
+            EARLY_STOPPING_PATIENCE
+    },
+
+    "dataset": {
+
+        "csv":
+            str(CSV_PATH),
+
+        "train_size":
+            len(train_dataset),
+
+        "validation_size":
+            len(validation_dataset),
+
+        "classes":
+            CLASS_NAMES
+    }
+}
+
+
+config_path = (
+    EXPERIMENT_OUTPUT_DIR
+    / "config.json"
+)
+
+with open(
+    config_path,
+    "w"
+) as file:
+
+    json.dump(
+        full_config,
+        file,
+        indent=4
+    )
+
+
+# ============================================================
 # TRAINING LOOP
 # ============================================================
 
@@ -592,9 +862,14 @@ history = []
 
 best_val_f1 = -1.0
 
+best_epoch = 0
+
+epochs_without_improvement = 0
+
+
 best_model_path = (
-    MODEL_DIR
-    / "convnextv2_best_sanity.pth"
+    EXPERIMENT_MODEL_DIR
+    / "best_model.pth"
 )
 
 
@@ -604,6 +879,10 @@ print("STARTING TRAINING")
 print("=" * 70)
 
 print()
+
+print(
+    f"Experiment: {EXPERIMENT_NAME}"
+)
 
 print(
     f"Epochs: {NUM_EPOCHS}"
@@ -618,9 +897,37 @@ print(
 )
 
 print(
+    f"Weight decay: {WEIGHT_DECAY}"
+)
+
+print(
     f"AMP enabled: {USE_AMP}"
 )
 
+print(
+    f"Pretrained: "
+    f"{EXPERIMENT_CONFIG['pretrained']}"
+)
+
+print(
+    f"Augmentation: "
+    f"{EXPERIMENT_CONFIG['augmentation']}"
+)
+
+print(
+    f"Class weights: "
+    f"{EXPERIMENT_CONFIG['class_weights']}"
+)
+
+print(
+    f"Scheduler: "
+    f"{EXPERIMENT_CONFIG['scheduler']}"
+)
+
+
+# ============================================================
+# EPOCHS
+# ============================================================
 
 for epoch in range(
     1,
@@ -636,20 +943,39 @@ for epoch in range(
 
     print("=" * 70)
 
+
     # --------------------------------------------------------
     # Train
     # --------------------------------------------------------
 
-    train_loss, train_metrics, train_time = (
-        train_one_epoch()
-    )
+    (
+        train_loss,
+        train_metrics,
+        train_time
+    ) = train_one_epoch()
+
 
     # --------------------------------------------------------
     # Validation
     # --------------------------------------------------------
 
-    val_loss, val_metrics = (
-        validate()
+    (
+        val_loss,
+        val_metrics
+    ) = validate()
+
+
+    # --------------------------------------------------------
+    # Scheduler
+    # --------------------------------------------------------
+
+    if scheduler is not None:
+
+        scheduler.step()
+
+
+    current_lr = (
+        optimizer.param_groups[0]["lr"]
     )
 
 
@@ -662,7 +988,8 @@ for epoch in range(
     print("TRAIN")
 
     print(
-        f"Loss:      {train_loss:.4f}"
+        f"Loss:      "
+        f"{train_loss:.4f}"
     )
 
     print(
@@ -680,7 +1007,8 @@ for epoch in range(
     print("VALIDATION")
 
     print(
-        f"Loss:      {val_loss:.4f}"
+        f"Loss:      "
+        f"{val_loss:.4f}"
     )
 
     print(
@@ -706,20 +1034,30 @@ for epoch in range(
     print()
 
     print(
+        f"Learning rate: "
+        f"{current_lr:.8f}"
+    )
+
+    print(
         f"Epoch time: "
         f"{train_time:.1f} seconds"
     )
 
 
     # --------------------------------------------------------
-    # Save history
+    # History
     # --------------------------------------------------------
 
     history_entry = {
 
-        "epoch": epoch,
+        "epoch":
+            epoch,
 
-        "train_loss": train_loss,
+        "learning_rate":
+            current_lr,
+
+        "train_loss":
+            train_loss,
 
         "train_accuracy":
             train_metrics["accuracy"],
@@ -727,7 +1065,8 @@ for epoch in range(
         "train_macro_f1":
             train_metrics["macro_f1"],
 
-        "val_loss": val_loss,
+        "val_loss":
+            val_loss,
 
         "val_accuracy":
             val_metrics["accuracy"],
@@ -751,7 +1090,7 @@ for epoch in range(
 
 
     # --------------------------------------------------------
-    # Save best model
+    # Best model
     # --------------------------------------------------------
 
     if (
@@ -763,9 +1102,16 @@ for epoch in range(
             val_metrics["macro_f1"]
         )
 
+        best_epoch = epoch
+
+        epochs_without_improvement = 0
+
+
         torch.save(
             {
-                "epoch": epoch,
+
+                "epoch":
+                    epoch,
 
                 "model_state_dict":
                     model.state_dict(),
@@ -779,22 +1125,16 @@ for epoch in range(
                 "class_names":
                     CLASS_NAMES,
 
-                "config": {
-                    "model_name":
-                        "convnextv2_base.fcmae_ft_in1k",
+                "experiment":
+                    EXPERIMENT_NAME,
 
-                    "num_classes":
-                        NUM_CLASSES,
-
-                    "image_size":
-                        224,
-
-                    "random_seed":
-                        RANDOM_SEED
-                }
+                "config":
+                    full_config
             },
+
             best_model_path
         )
+
 
         print()
 
@@ -806,14 +1146,42 @@ for epoch in range(
             best_model_path
         )
 
+    else:
+
+        epochs_without_improvement += 1
+
+
+    # --------------------------------------------------------
+    # Early stopping
+    # --------------------------------------------------------
+
+    if (
+        epochs_without_improvement
+        >= EARLY_STOPPING_PATIENCE
+    ):
+
+        print()
+
+        print(
+            "Early stopping triggered."
+        )
+
+        print(
+            f"No validation Macro F1 "
+            f"improvement for "
+            f"{EARLY_STOPPING_PATIENCE} epochs."
+        )
+
+        break
+
 
 # ============================================================
 # SAVE HISTORY
 # ============================================================
 
 history_path = (
-    OUTPUT_DIR
-    / "sanity_training_history.json"
+    EXPERIMENT_OUTPUT_DIR
+    / "training_history.json"
 )
 
 with open(
@@ -829,22 +1197,94 @@ with open(
 
 
 # ============================================================
+# SAVE FINAL RESULT
+# ============================================================
+
+best_result = {
+
+    "experiment":
+        EXPERIMENT_NAME,
+
+    "best_epoch":
+        best_epoch,
+
+    "best_validation_macro_f1":
+        best_val_f1,
+
+    "best_validation_accuracy":
+        max(
+            item["val_accuracy"]
+            for item in history
+        ),
+
+    "configuration":
+        EXPERIMENT_CONFIG,
+
+    "hyperparameters": {
+
+        "batch_size":
+            BATCH_SIZE,
+
+        "learning_rate":
+            LEARNING_RATE,
+
+        "weight_decay":
+            WEIGHT_DECAY,
+
+        "num_epochs":
+            NUM_EPOCHS,
+
+        "random_seed":
+            RANDOM_SEED
+    }
+}
+
+
+result_path = (
+    EXPERIMENT_OUTPUT_DIR
+    / "result.json"
+)
+
+with open(
+    result_path,
+    "w"
+) as file:
+
+    json.dump(
+        best_result,
+        file,
+        indent=4
+    )
+
+
+# ============================================================
 # FINAL
 # ============================================================
 
 print()
 print("=" * 70)
-print("SANITY TRAINING COMPLETE")
+print("EXPERIMENT COMPLETE")
 print("=" * 70)
 
 print()
 
 print(
-    "Best validation Macro F1:"
+    f"Experiment: "
+    f"{EXPERIMENT_NAME}"
 )
 
+print()
+
 print(
+    f"Best validation Macro F1: "
     f"{best_val_f1:.4f}"
+)
+
+print()
+
+print(
+    f"Best epoch: "
+    f"{best_epoch}"
 )
 
 print()
@@ -860,9 +1300,29 @@ print(
 print()
 
 print(
+    "Configuration:"
+)
+
+print(
+    config_path.resolve()
+)
+
+print()
+
+print(
     "Training history:"
 )
 
 print(
     history_path.resolve()
+)
+
+print()
+
+print(
+    "Result:"
+)
+
+print(
+    result_path.resolve()
 )

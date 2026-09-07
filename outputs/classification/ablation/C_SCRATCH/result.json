@@ -1,0 +1,20 @@
+{
+    "experiment": "C_SCRATCH",
+    "best_epoch": 15,
+    "best_validation_macro_f1": 0.9644985829960817,
+    "best_validation_accuracy": 0.9642105263157895,
+    "configuration": {
+        "description": "Ablation using random initialization",
+        "pretrained": false,
+        "augmentation": true,
+        "class_weights": true,
+        "scheduler": true
+    },
+    "hyperparameters": {
+        "batch_size": 32,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.0001,
+        "num_epochs": 15,
+        "random_seed": 42
+    }
+}

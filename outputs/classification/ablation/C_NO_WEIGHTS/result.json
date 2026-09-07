@@ -1,0 +1,20 @@
+{
+    "experiment": "C_NO_WEIGHTS",
+    "best_epoch": 1,
+    "best_validation_macro_f1": 1.0,
+    "best_validation_accuracy": 1.0,
+    "configuration": {
+        "description": "Ablation without class weighting",
+        "pretrained": true,
+        "augmentation": true,
+        "class_weights": false,
+        "scheduler": true
+    },
+    "hyperparameters": {
+        "batch_size": 32,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.0001,
+        "num_epochs": 15,
+        "random_seed": 42
+    }
+}

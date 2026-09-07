@@ -2,13 +2,16 @@
 Apple leaf disease classification and severity grading using deep learning
 
 # virtual environment
-py -3.11 -m venv .venv
+py -3.12 -m venv .venv
 # activate env
 .\.venv\Scripts\Activate.ps1
 
 (if there is an execution policy error run - 
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 )
+
+# git clone
+git clone https://github.com/aastha-jain-11/Apple_Leaf_Disease.git apple_disease_project
 
 # installations
 python.exe -m pip install --upgrade pip

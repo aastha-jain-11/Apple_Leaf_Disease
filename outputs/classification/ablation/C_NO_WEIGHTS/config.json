@@ -1,0 +1,34 @@
+{
+    "experiment": "C_NO_WEIGHTS",
+    "experiment_description": "Ablation without class weighting",
+    "experiment_settings": {
+        "description": "Ablation without class weighting",
+        "pretrained": true,
+        "augmentation": true,
+        "class_weights": false,
+        "scheduler": true
+    },
+    "hyperparameters": {
+        "random_seed": 42,
+        "batch_size": 32,
+        "num_workers": 0,
+        "num_classes": 4,
+        "image_size": 224,
+        "learning_rate": 0.0001,
+        "weight_decay": 0.0001,
+        "num_epochs": 15,
+        "use_amp": true,
+        "early_stopping_patience": 5
+    },
+    "dataset": {
+        "csv": "D:\\23BLC1297\\apple_disease_project\\outputs\\dataset_split.csv",
+        "train_size": 2214,
+        "validation_size": 475,
+        "classes": [
+            "apple_scab",
+            "black_rot",
+            "cedar_rust",
+            "healthy"
+        ]
+    }
+}

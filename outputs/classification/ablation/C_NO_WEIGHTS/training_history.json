@@ -1,0 +1,80 @@
+[
+    {
+        "epoch": 1,
+        "learning_rate": 9.890738003669029e-05,
+        "train_loss": 0.24447213666717157,
+        "train_accuracy": 0.9376693766937669,
+        "train_macro_f1": 0.9125845634679512,
+        "val_loss": 0.016875722812194575,
+        "val_accuracy": 1.0,
+        "val_macro_precision": 1.0,
+        "val_macro_recall": 1.0,
+        "val_macro_f1": 1.0,
+        "epoch_time_seconds": 73.5583848953247
+    },
+    {
+        "epoch": 2,
+        "learning_rate": 9.567727288213005e-05,
+        "train_loss": 0.04120249520018091,
+        "train_accuracy": 0.988256549232159,
+        "train_macro_f1": 0.9821122972630532,
+        "val_loss": 0.010352498092933706,
+        "val_accuracy": 1.0,
+        "val_macro_precision": 1.0,
+        "val_macro_recall": 1.0,
+        "val_macro_f1": 1.0,
+        "epoch_time_seconds": 41.69124937057495
+    },
+    {
+        "epoch": 3,
+        "learning_rate": 9.045084971874738e-05,
+        "train_loss": 0.024788153526905752,
+        "train_accuracy": 0.993676603432701,
+        "train_macro_f1": 0.9935794325851677,
+        "val_loss": 0.0056410739061079525,
+        "val_accuracy": 1.0,
+        "val_macro_precision": 1.0,
+        "val_macro_recall": 1.0,
+        "val_macro_f1": 1.0,
+        "epoch_time_seconds": 39.148802757263184
+    },
+    {
+        "epoch": 4,
+        "learning_rate": 8.345653031794292e-05,
+        "train_loss": 0.004343437739288689,
+        "train_accuracy": 1.0,
+        "train_macro_f1": 1.0,
+        "val_loss": 0.003538703918947201,
+        "val_accuracy": 1.0,
+        "val_macro_precision": 1.0,
+        "val_macro_recall": 1.0,
+        "val_macro_f1": 1.0,
+        "epoch_time_seconds": 39.74524807929993
+    },
+    {
+        "epoch": 5,
+        "learning_rate": 7.500000000000001e-05,
+        "train_loss": 0.025291127563717538,
+        "train_accuracy": 0.9941282746160794,
+        "train_macro_f1": 0.9939869088970111,
+        "val_loss": 0.005096574092381879,
+        "val_accuracy": 1.0,
+        "val_macro_precision": 1.0,
+        "val_macro_recall": 1.0,
+        "val_macro_f1": 1.0,
+        "epoch_time_seconds": 39.52927613258362
+    },
+    {
+        "epoch": 6,
+        "learning_rate": 6.545084971874738e-05,
+        "train_loss": 0.011105692052798112,
+        "train_accuracy": 0.997289972899729,
+        "train_macro_f1": 0.9960251479299909,
+        "val_loss": 0.005135247068185555,
+        "val_accuracy": 1.0,
+        "val_macro_precision": 1.0,
+        "val_macro_recall": 1.0,
+        "val_macro_f1": 1.0,
+        "epoch_time_seconds": 39.48512625694275
+    }
+]

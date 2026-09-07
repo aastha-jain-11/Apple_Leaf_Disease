@@ -8,9 +8,6 @@ __pycache__/
 # Dataset
 dataset/
 
-# Generated outputs
-outputs/
-
 # Trained models
 models/
 *.pth
