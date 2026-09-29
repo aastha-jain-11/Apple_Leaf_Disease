@@ -21,7 +21,7 @@ pip install numpy pandas pillow matplotlib tqdm openpyxl
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 pip install opencv-python scikit-image seaborn
 pip install timm
-
+pip install transformers accelerate labelme
 
 # run
 python src\preprocessing\analyze_dataset.py
