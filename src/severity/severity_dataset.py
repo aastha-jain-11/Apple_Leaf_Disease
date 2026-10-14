@@ -5,7 +5,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 import torchvision.transforms.functional as TF
-from severity_config import SEVERITY_ROOT, IMAGE_SIZE
+from severity_config import SEVERITY_ROOT, IMAGE_SIZE, PROJECT_ROOT
 
 class SeveritySegmentationDataset(Dataset):
     def __init__(self, split_csv, split, training=False):
@@ -22,7 +22,15 @@ class SeveritySegmentationDataset(Dataset):
         row = self.data.iloc[i]
         cls = row["class"]
         stem = Path(row["filename"]).stem
-        mask_path = SEVERITY_ROOT / row["mask_path"]
+        
+        raw_mask_path = Path(str(row["mask_path"]))
+
+        if raw_mask_path.is_absolute():
+            mask_path = raw_mask_path
+        elif raw_mask_path.parts[:2] == ("outputs", "severity"):
+            mask_path = PROJECT_ROOT / raw_mask_path
+        else:
+            mask_path = SEVERITY_ROOT / raw_mask_path
 
         image = None
         for ext in [".jpg",".JPG",".jpeg",".JPEG",".png",".PNG"]:

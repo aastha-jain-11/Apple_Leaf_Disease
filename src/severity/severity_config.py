@@ -5,7 +5,7 @@ SEVERITY_ROOT = PROJECT_ROOT / "outputs" / "severity"
 ANNOTATION_IMAGES = SEVERITY_ROOT / "annotation_images"
 LABELS_JSON = SEVERITY_ROOT / "labels_json"
 MASKS = SEVERITY_ROOT / "masks"
-SPLIT_CSV = SEVERITY_ROOT / "severity_segmentation_split.csv"
+SPLIT_CSV = SEVERITY_ROOT / "severity_stratified_split.csv"
 MODEL_ROOT = PROJECT_ROOT / "models" / "segformer" / "severity"
 OUTPUT_ROOT = SEVERITY_ROOT / "segformer"
 
